@@ -1,0 +1,915 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  USER
+  GUIDE
+  PROVIDER
+  ADMIN
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+enum ListingStatus {
+  DRAFT
+  PENDING_REVIEW
+  PUBLISHED
+  REJECTED
+  ARCHIVED
+}
+
+enum CompanionStatus {
+  OPEN
+  FULL
+  CANCELLED
+  CLOSED
+}
+
+enum JoinStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELLED
+}
+
+enum Difficulty {
+  EASY
+  MODERATE
+  CHALLENGING
+  STRENUOUS
+}
+
+enum ReviewStatus {
+  PUBLISHED
+  HIDDEN
+}
+
+enum DateStatus {
+  OPEN
+  CLOSED
+}
+
+model User {
+  id                  String    @id @default(uuid())
+  email               String    @unique
+  passwordHash        String
+  firstName           String
+  lastName            String
+  phone               String?
+  avatarUrl           String?
+  bio                 String?
+  interests           String[]  @default([])
+  preferredRegions    String[]  @default([])
+  language            String    @default("en")
+  role                Role      @default(USER)
+  city                String?
+  showProfilePublicly Boolean   @default(false)
+  notifyBookings      Boolean   @default(true)
+  notifyCompanions    Boolean   @default(true)
+  notifyMarketing     Boolean   @default(false)
+  telegramHandle      String?
+  whatsappHandle      String?
+  suspendedAt         DateTime?
+  deletionRequestedAt DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  refreshTokens       RefreshToken[]
+  passwordResets      PasswordReset[]
+  blocksMade          UserBlock[]            @relation("BlocksMade")
+  blocksReceived      UserBlock[]            @relation("BlocksReceived")
+  reportsMade         UserReport[]           @relation("ReportsMade")
+  reportsReceived     UserReport[]           @relation("ReportsReceived")
+  bookings            Booking[]
+  favorites           Favorite[]
+  reviews             Review[]
+  itineraries         Itinerary[]
+  guideProfile        GuideProfile?
+  companionTrips      CompanionTrip[]
+  joinRequests        CompanionJoinRequest[]
+  notifications       Notification[]
+  providerListings    ProviderListing[]
+  auditLogs           AuditLog[]
+  ownedAccommodations Accommodation[]        @relation("AccommodationOwner")
+  organizedGroups     TravelGroup[]          @relation("GroupOrganizer")
+  groupMemberships    GroupMembership[]
+  groupJoinRequests   GroupJoinRequest[]
+  groupMessages       GroupMessage[]
+  tourProposals       TourProposal[]
+  tourVotes           TourVote[]
+  pollVotes           DatePollVote[]
+  contactRequests     ContactRequest[]       @relation("OperatorContacts")
+  conversationMembers ConversationMember[]
+  conversationMessages ConversationMessage[]
+  inquiriesSent       GroupInquiry[]         @relation("InquiryOrganizer")
+  inquiriesReceived   GroupInquiry[]         @relation("InquiryOperator")
+  travelVideos        TravelVideo[]
+  ownedTours          Tour[]                 @relation("TourOwner")
+  videoLikes          VideoLike[]
+  videoComments       VideoComment[]
+  savedVideos         SavedVideo[]
+  contentReports      ContentReport[]
+
+  @@index([role])
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  userAgent String?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model PasswordReset {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model UserBlock {
+  id        String   @id @default(uuid())
+  blockerId String
+  blockedId String
+  blocker   User     @relation("BlocksMade", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked   User     @relation("BlocksReceived", fields: [blockedId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([blockerId, blockedId])
+}
+
+model UserReport {
+  id         String   @id @default(uuid())
+  reporterId String
+  reportedId String
+  reason     String
+  details    String?
+  status     String   @default("OPEN")
+  reporter   User     @relation("ReportsMade", fields: [reporterId], references: [id], onDelete: Cascade)
+  reported   User     @relation("ReportsReceived", fields: [reportedId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@index([status])
+}
+
+model Destination {
+  id                String              @id @default(uuid())
+  slug              String              @unique
+  name              String
+  region            String
+  category          String
+  copy              Json
+  latitude          Decimal             @db.Decimal(9, 6)
+  longitude         Decimal             @db.Decimal(9, 6)
+  locationNote      String              @default("Approximate catalog coordinate, not a surveyed point.")
+  suggestedDays     Int?
+  bestPeriod        String?
+  budgetEstimateMin Decimal?            @db.Decimal(12, 2)
+  budgetEstimateMax Decimal?            @db.Decimal(12, 2)
+  budgetNote        String?
+  activities        String[]
+  searchText        String              @default("")
+  published         Boolean             @default(false)
+  featured          Boolean             @default(false)
+  trending          Boolean             @default(false)
+  weekend           Boolean             @default(false)
+  budgetFriendly    Boolean             @default(false)
+  coverImageUrl     String?
+  images            DestinationImage[]
+  tours             Tour[]
+  accommodations    Accommodation[]
+  favorites         Favorite[]
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([published, region])
+  @@index([category])
+  @@index([featured])
+}
+
+model DestinationImage {
+  id            String      @id @default(uuid())
+  destinationId String
+  destination   Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  url           String
+  alt           String
+  sortOrder     Int         @default(0)
+  credit        String?
+
+  @@index([destinationId])
+}
+
+model Tour {
+  id                 String       @id @default(uuid())
+  slug               String       @unique
+  destinationId      String
+  destination        Destination  @relation(fields: [destinationId], references: [id], onDelete: Restrict)
+  title              String
+  copy               Json
+  category           String
+  difficulty         Difficulty
+  durationDays       Int
+  meetingPoint       String
+  included           String[]
+  excluded           String[]
+  cancellationPolicy String
+  pricePerPerson     Decimal      @db.Decimal(12, 2)
+  currency           String       @default("TJS")
+  guideId            String?
+  guide              GuideProfile? @relation(fields: [guideId], references: [id], onDelete: SetNull)
+  ownerId            String?
+  owner              User?        @relation("TourOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  viewCount          Int          @default(0)
+  contactPhone       String?
+  published          Boolean      @default(false)
+  coverImageUrl      String?
+  searchText         String       @default("")
+  images             TourImage[]
+  dates              TourDate[]
+  bookings           Booking[]
+  reviews            Review[]
+  favorites          Favorite[]
+  proposals          TourProposal[]
+  videos             TravelVideo[]
+  inquiries          GroupInquiry[]
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  @@index([published, destinationId])
+  @@index([ownerId])
+  @@index([category])
+  @@index([pricePerPerson])
+}
+
+model TourImage {
+  id        String  @id @default(uuid())
+  tourId    String
+  tour      Tour    @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  url       String
+  alt       String
+  sortOrder Int     @default(0)
+  credit    String?
+
+  @@index([tourId])
+}
+
+model TourDate {
+  id          String     @id @default(uuid())
+  tourId      String
+  tour        Tour       @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  startDate   DateTime   @db.Date
+  endDate     DateTime   @db.Date
+  capacity    Int
+  bookedSeats Int        @default(0)
+  status      DateStatus @default(OPEN)
+  bookings    Booking[]
+
+  @@unique([tourId, startDate])
+  @@index([startDate, status])
+}
+
+model Booking {
+  id             String           @id @default(uuid())
+  reference      String           @unique
+  userId         String
+  user           User             @relation(fields: [userId], references: [id], onDelete: Restrict)
+  tourId         String
+  tour           Tour             @relation(fields: [tourId], references: [id], onDelete: Restrict)
+  tourDateId     String
+  tourDate       TourDate         @relation(fields: [tourDateId], references: [id], onDelete: Restrict)
+  travelers      Int
+  pricePerPerson Decimal          @db.Decimal(12, 2)
+  totalPrice     Decimal          @db.Decimal(12, 2)
+  currency       String           @default("TJS")
+  status         BookingStatus    @default(PENDING)
+  contactName    String
+  contactEmail   String
+  contactPhone   String
+  notes          String?
+  paymentStatus  String           @default("NOT_COLLECTED")
+  travelersList  BookingTraveler[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@index([userId, status])
+  @@index([tourDateId])
+}
+
+model BookingTraveler {
+  id        String  @id @default(uuid())
+  bookingId String
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  fullName  String
+}
+
+model Favorite {
+  id              String         @id @default(uuid())
+  userId          String
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  destinationId   String?
+  destination     Destination?   @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  tourId          String?
+  tour            Tour?          @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  accommodationId String?
+  accommodation   Accommodation? @relation(fields: [accommodationId], references: [id], onDelete: Cascade)
+  guideId         String?
+  guide           GuideProfile?  @relation(fields: [guideId], references: [id], onDelete: Cascade)
+  createdAt       DateTime       @default(now())
+
+  @@index([userId])
+  @@index([destinationId])
+  @@index([tourId])
+}
+
+model Itinerary {
+  id                 String         @id @default(uuid())
+  userId             String
+  user               User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title              String
+  startLocation      String
+  region             String?
+  startDate          DateTime?      @db.Date
+  endDate            DateTime?      @db.Date
+  travelers          Int
+  budgetTjs          Decimal        @db.Decimal(12, 2)
+  interests          String[]
+  travelStyle        String?
+  transport          String?
+  accommodationPref  String?
+  accessibility      String?
+  source             String
+  disclaimer         String
+  assumptions        String[]
+  packing            String[]
+  alternatives       String?
+  budgetShortfall    Boolean        @default(false)
+  totalEstimate      Decimal?       @db.Decimal(12, 2)
+  days               ItineraryDay[]
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  @@index([userId])
+}
+
+model ItineraryDay {
+  id          String              @id @default(uuid())
+  itineraryId String
+  itinerary   Itinerary           @relation(fields: [itineraryId], references: [id], onDelete: Cascade)
+  dayNumber   Int
+  title       String
+  notes       String?
+  activities  ItineraryActivity[]
+
+  @@index([itineraryId])
+}
+
+model ItineraryActivity {
+  id               String       @id @default(uuid())
+  dayId            String
+  day              ItineraryDay @relation(fields: [dayId], references: [id], onDelete: Cascade)
+  title            String
+  placeName        String?
+  description      String
+  timeEstimateNote String
+  transportNote    String?
+  estimatedCost    Decimal?     @db.Decimal(12, 2)
+  tourId           String?
+  sortOrder        Int          @default(0)
+
+  @@index([dayId])
+}
+
+model Accommodation {
+  id            String               @id @default(uuid())
+  slug          String               @unique
+  name          String
+  type          String
+  destinationId String?
+  destination   Destination?         @relation(fields: [destinationId], references: [id], onDelete: SetNull)
+  region        String
+  copy          Json
+  priceRangeMin Decimal?             @db.Decimal(12, 2)
+  priceRangeMax Decimal?             @db.Decimal(12, 2)
+  priceNote     String?
+  contactEmail  String?
+  contactPhone  String?
+  latitude      Decimal?             @db.Decimal(9, 6)
+  longitude     Decimal?             @db.Decimal(9, 6)
+  services      String[]
+  coverImageUrl String?
+  status        ListingStatus        @default(PENDING_REVIEW)
+  verified      Boolean              @default(false)
+  ownerId       String?
+  owner         User?                @relation("AccommodationOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  searchText    String               @default("")
+  images        AccommodationImage[]
+  reviews       Review[]
+  favorites     Favorite[]
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  @@index([status, region])
+}
+
+model AccommodationImage {
+  id              String        @id @default(uuid())
+  accommodationId String
+  accommodation   Accommodation @relation(fields: [accommodationId], references: [id], onDelete: Cascade)
+  url             String
+  alt             String
+  sortOrder       Int           @default(0)
+  credit          String?
+}
+
+model GuideProfile {
+  id              String        @id @default(uuid())
+  userId          String        @unique
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  displayName     String
+  region          String
+  languages       String[]
+  specialties     String[]
+  bio             String
+  yearsExperience Int?
+  priceNote       String?
+  contactEmail    String?
+  contactPhone    String?
+  coverImageUrl   String?
+  services        String[]
+  kind            String
+  status          ListingStatus @default(PENDING_REVIEW)
+  verified        Boolean       @default(false)
+  searchText      String        @default("")
+  tours           Tour[]
+  reviews         Review[]
+  favorites       Favorite[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([status, region])
+  @@index([kind])
+}
+
+model CompanionTrip {
+  id                String                 @id @default(uuid())
+  hostId            String
+  host              User                   @relation(fields: [hostId], references: [id], onDelete: Cascade)
+  title             String
+  destinationName   String
+  region            String
+  startDate         DateTime               @db.Date
+  endDate           DateTime               @db.Date
+  interests         String[]
+  budgetEstimate    Decimal?               @db.Decimal(12, 2)
+  companionsWanted  Int
+  description       String
+  status            CompanionStatus        @default(OPEN)
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  requests          CompanionJoinRequest[]
+
+  @@index([status, region])
+}
+
+model CompanionJoinRequest {
+  id        String       @id @default(uuid())
+  tripId    String
+  trip      CompanionTrip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message   String?
+  status    JoinStatus   @default(PENDING)
+  createdAt DateTime     @default(now())
+
+  @@unique([tripId, userId])
+}
+
+model Review {
+  id              String         @id @default(uuid())
+  userId          String
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating          Int
+  comment         String
+  tourId          String?
+  tour            Tour?          @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  accommodationId String?
+  accommodation   Accommodation? @relation(fields: [accommodationId], references: [id], onDelete: Cascade)
+  guideId         String?
+  guide           GuideProfile?  @relation(fields: [guideId], references: [id], onDelete: Cascade)
+  status          ReviewStatus   @default(PUBLISHED)
+  createdAt       DateTime       @default(now())
+
+  @@index([tourId, status])
+  @@index([accommodationId, status])
+  @@index([guideId, status])
+}
+
+model Notification {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  body      String
+  type      String
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model ProviderListing {
+  id           String        @id @default(uuid())
+  ownerId      String
+  owner        User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  kind         String
+  name         String
+  region       String
+  description  String
+  contactEmail String
+  contactPhone String?
+  priceNote    String?
+  services     String[]
+  status       ListingStatus @default(PENDING_REVIEW)
+  reviewNote   String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([status])
+}
+
+enum GroupVisibility {
+  PUBLIC
+  PRIVATE
+}
+
+enum GroupJoinMode {
+  OPEN
+  REQUEST
+}
+
+enum GroupMemberRole {
+  ORGANIZER
+  MEMBER
+}
+
+enum ProposalStatus {
+  OPEN
+  SELECTED
+  CLOSED
+}
+
+enum PollStatus {
+  OPEN
+  CLOSED
+}
+
+enum ContactRequestStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
+enum InquiryStatus {
+  DRAFT
+  PENDING
+  CONTACTED
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+enum VideoModeration {
+  PENDING
+  PUBLISHED
+  HIDDEN
+}
+
+model TravelGroup {
+  id                 String             @id @default(uuid())
+  organizerId        String
+  organizer          User               @relation("GroupOrganizer", fields: [organizerId], references: [id], onDelete: Cascade)
+  name               String
+  coverImageUrl      String?
+  destinationName    String
+  region             String
+  description        String
+  departureDate      DateTime?          @db.Date
+  departureTime      String?
+  flexibleDates      Boolean            @default(false)
+  budgetPerPerson    Decimal?           @db.Decimal(12, 2)
+  desiredSize        Int
+  travelStyle        String?
+  visibility         GroupVisibility    @default(PUBLIC)
+  joinMode           GroupJoinMode      @default(REQUEST)
+  rules              String?
+  interests          String[]
+  status             String             @default("OPEN")
+  selectedProposalId String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  members            GroupMembership[]
+  joinRequests       GroupJoinRequest[]
+  messages           GroupMessage[]
+  proposals          TourProposal[]
+  polls              DatePoll[]
+  contactRequests    ContactRequest[]
+  videos             TravelVideo[]
+  inquiries          GroupInquiry[]
+  conversations      Conversation[]
+
+  @@index([visibility, status, region])
+}
+
+model GroupMembership {
+  id       String          @id @default(uuid())
+  groupId  String
+  group    TravelGroup     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role     GroupMemberRole @default(MEMBER)
+  joinedAt DateTime        @default(now())
+
+  @@unique([groupId, userId])
+  @@index([userId])
+}
+
+model GroupJoinRequest {
+  id        String       @id @default(uuid())
+  groupId   String
+  group     TravelGroup  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message   String?
+  status    JoinStatus   @default(PENDING)
+  createdAt DateTime     @default(now())
+
+  @@unique([groupId, userId])
+}
+
+model GroupMessage {
+  id        String      @id @default(uuid())
+  groupId   String
+  group     TravelGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  senderId  String?
+  sender    User?       @relation(fields: [senderId], references: [id], onDelete: SetNull)
+  body      String
+  system    Boolean     @default(false)
+  createdAt DateTime    @default(now())
+
+  @@index([groupId, createdAt])
+}
+
+model TourProposal {
+  id              String         @id @default(uuid())
+  groupId         String
+  group           TravelGroup    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  tourId          String?
+  tour            Tour?          @relation(fields: [tourId], references: [id], onDelete: SetNull)
+  proposerId      String
+  proposer        User           @relation(fields: [proposerId], references: [id], onDelete: Cascade)
+  operatorName    String
+  title           String
+  destinationName String
+  pricePerPerson  Decimal        @db.Decimal(12, 2)
+  durationDays    Int
+  departureDate   DateTime?      @db.Date
+  included        String
+  excluded        String
+  custom          Boolean        @default(false)
+  status          ProposalStatus @default(OPEN)
+  createdAt       DateTime       @default(now())
+  votes           TourVote[]
+
+  @@index([groupId, status])
+}
+
+model TourVote {
+  id         String       @id @default(uuid())
+  groupId    String
+  proposalId String
+  proposal   TourProposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime     @default(now())
+
+  @@unique([groupId, userId])
+  @@index([proposalId])
+}
+
+model DatePoll {
+  id             String           @id @default(uuid())
+  groupId        String
+  group          TravelGroup      @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  question       String
+  status         PollStatus       @default(OPEN)
+  createdById    String
+  closedOptionId String?
+  createdAt      DateTime         @default(now())
+  options        DatePollOption[]
+
+  @@index([groupId])
+}
+
+model DatePollOption {
+  id     String         @id @default(uuid())
+  pollId String
+  poll   DatePoll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  label  String
+  date   DateTime?      @db.Date
+  votes  DatePollVote[]
+}
+
+model DatePollVote {
+  id        String         @id @default(uuid())
+  pollId    String
+  optionId  String
+  option    DatePollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime       @default(now())
+
+  @@unique([pollId, userId])
+}
+
+model ContactRequest {
+  id           String               @id @default(uuid())
+  groupId      String
+  group        TravelGroup          @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  operatorId   String
+  operator     User                 @relation("OperatorContacts", fields: [operatorId], references: [id], onDelete: Cascade)
+  tourId       String?
+  message      String
+  status       ContactRequestStatus @default(PENDING)
+  createdAt    DateTime             @default(now())
+  conversation Conversation?
+
+  @@index([groupId, status])
+  @@index([operatorId, createdAt])
+}
+
+model Conversation {
+  id               String               @id @default(uuid())
+  contactRequestId String?              @unique
+  contactRequest   ContactRequest?      @relation(fields: [contactRequestId], references: [id], onDelete: SetNull)
+  groupId          String?
+  group            TravelGroup?         @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  tourId           String?
+  createdAt        DateTime             @default(now())
+  members          ConversationMember[]
+  messages         ConversationMessage[]
+}
+
+model ConversationMember {
+  id             String       @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@index([userId])
+}
+
+model ConversationMessage {
+  id             String       @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  body           String
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+model GroupInquiry {
+  id             String        @id @default(uuid())
+  groupId        String
+  group          TravelGroup   @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  organizerId    String
+  organizer      User          @relation("InquiryOrganizer", fields: [organizerId], references: [id], onDelete: Cascade)
+  operatorId     String
+  operator       User          @relation("InquiryOperator", fields: [operatorId], references: [id], onDelete: Cascade)
+  tourId         String?
+  tour           Tour?         @relation(fields: [tourId], references: [id], onDelete: SetNull)
+  proposalId     String?
+  travelers      Int
+  preferredDate  DateTime?     @db.Date
+  proposedPrice  Decimal?      @db.Decimal(12, 2)
+  currency       String        @default("TJS")
+  notes          String?
+  status         InquiryStatus @default(PENDING)
+  statusHistory  Json
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([operatorId, status])
+  @@index([organizerId])
+}
+
+model TravelVideo {
+  id              String          @id @default(uuid())
+  creatorId       String
+  creator         User            @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  caption         String
+  destinationName String
+  region          String
+  posterUrl       String
+  videoUrl        String
+  tourId          String?
+  tour            Tour?           @relation(fields: [tourId], references: [id], onDelete: SetNull)
+  groupId         String?
+  group           TravelGroup?    @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  status          VideoModeration @default(PENDING)
+  createdAt       DateTime        @default(now())
+  likes           VideoLike[]
+  comments        VideoComment[]
+  saves           SavedVideo[]
+
+  @@index([status, createdAt])
+}
+
+model VideoLike {
+  id        String      @id @default(uuid())
+  videoId   String
+  video     TravelVideo @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime    @default(now())
+
+  @@unique([videoId, userId])
+}
+
+model VideoComment {
+  id        String      @id @default(uuid())
+  videoId   String
+  video     TravelVideo @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  body      String
+  createdAt DateTime    @default(now())
+
+  @@index([videoId, createdAt])
+}
+
+model SavedVideo {
+  id        String      @id @default(uuid())
+  videoId   String
+  video     TravelVideo @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime    @default(now())
+
+  @@unique([videoId, userId])
+}
+
+model ContentReport {
+  id         String   @id @default(uuid())
+  reporterId String
+  reporter   User     @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+  targetType String
+  targetId   String
+  reason     String
+  status     String   @default("OPEN")
+  createdAt  DateTime @default(now())
+
+  @@index([status, targetType])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  actorId   String?
+  actor     User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  action    String
+  entity    String
+  entityId  String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@index([createdAt])
+}

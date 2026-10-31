@@ -1,0 +1,23 @@
+name: rohi-travel
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: rohi-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: rohi
+      POSTGRES_PASSWORD: rohi_dev_password
+      POSTGRES_DB: rohi_travel
+    ports:
+      - "5432:5432"
+    volumes:
+      - rohi_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rohi -d rohi_travel"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  rohi_pg:

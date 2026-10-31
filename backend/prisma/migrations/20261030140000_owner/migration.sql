@@ -1,0 +1,6 @@
+ALTER TABLE "User" ADD COLUMN "telegramHandle" TEXT;
+ALTER TABLE "User" ADD COLUMN "whatsappHandle" TEXT;
+ALTER TABLE "Tour" ADD COLUMN "ownerId" TEXT;
+ALTER TABLE "Tour" ADD COLUMN "viewCount" INTEGER NOT NULL DEFAULT 0;
+CREATE INDEX "Tour_ownerId_idx" ON "Tour"("ownerId");
+ALTER TABLE "Tour" ADD CONSTRAINT "Tour_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;

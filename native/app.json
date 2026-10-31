@@ -1,0 +1,48 @@
+{
+  "expo": {
+    "name": "Tour Tajikistan",
+    "slug": "tour-tajikistan",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "scheme": "tourtajikistan",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "tj.rohi.travel",
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true,
+          "NSAllowsLocalNetworking": true
+        },
+        "NSPhotoLibraryUsageDescription": "Аксҳои профил ва тур аз китобхонаи аксҳо интихоб мешаванд.",
+        "NSCameraUsageDescription": "Аксҳои профил ва тур бо камера гирифта мешаванд."
+      }
+    },
+    "android": {
+      "package": "tj.rohi.travel",
+      "usesCleartextTraffic": true,
+      "adaptiveIcon": {
+        "backgroundColor": "#1677FF",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Аксҳои профил ва тур аз китобхонаи аксҳо интихоб мешаванд.",
+          "cameraPermission": "Аксҳои профил ва тур бо камера гирифта мешаванд."
+        }
+      ],
+      "expo-secure-store",
+      "expo-video"
+    ],
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}

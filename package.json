@@ -1,0 +1,19 @@
+{
+  "name": "rohi-travel",
+  "private": true,
+  "description": "Rohi Travel — mobile app, admin panel, and API for tourism in Tajikistan.",
+  "scripts": {
+    "start:db": "docker compose up -d",
+    "install:all": "npm install --prefix backend && npm install --prefix mobile && npm install --prefix admin",
+    "dev:api": "npm run start:dev --prefix backend",
+    "dev:mobile": "npm run start --prefix mobile",
+    "dev:admin": "npm run start --prefix admin",
+    "dev:native": "npm start --prefix native",
+    "test:api": "npm test --prefix backend",
+    "build:api": "npm run build --prefix backend",
+    "build:mobile": "npm run build --prefix mobile",
+    "build:admin": "npm run build --prefix admin",
+    "db:migrate": "npm run prisma:migrate --prefix backend",
+    "db:seed": "npm run prisma:seed --prefix backend"
+  }
+}
