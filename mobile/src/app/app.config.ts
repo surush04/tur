@@ -3,14 +3,14 @@ import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
 import { provideIonicAngular } from '@ionic/angular';
 import { routes } from './app.routes';
-import { authInterceptor, langInterceptor } from './core/interceptors';
+import { authInterceptor, langInterceptor, logInterceptor } from './core/interceptors';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes),
-    provideHttpClient(withInterceptors([langInterceptor, authInterceptor])),
+    provideHttpClient(withInterceptors([langInterceptor, authInterceptor, logInterceptor])),
     provideIonicAngular({ mode: 'ios' }),
   ],
 };

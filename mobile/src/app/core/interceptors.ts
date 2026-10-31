@@ -1,8 +1,28 @@
 import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
-import { catchError, from, switchMap, throwError } from 'rxjs';
+import { catchError, from, switchMap, tap, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
 import { I18nService } from './i18n';
+
+// Each request in Logcat: filter by "[API]" (tag Capacitor/Console).
+export const logInterceptor: HttpInterceptorFn = (req, next) => {
+  const started = Date.now();
+  console.log(`[API] → ${req.method} ${req.urlWithParams}`);
+  return next(req).pipe(
+    tap({
+      next: (event) => {
+        if ('status' in event) {
+          console.log(`[API] ← ${event.status} ${req.method} ${req.urlWithParams} (${Date.now() - started} ms)`);
+        }
+      },
+      error: (error: unknown) => {
+        const status = error instanceof HttpErrorResponse ? error.status : '?';
+        const message = error instanceof HttpErrorResponse ? error.message : String(error);
+        console.error(`[API] ✗ ${status} ${req.method} ${req.urlWithParams} (${Date.now() - started} ms): ${message}`);
+      },
+    }),
+  );
+};
 
 export const langInterceptor: HttpInterceptorFn = (req, next) => {
   const i18n = inject(I18nService);
