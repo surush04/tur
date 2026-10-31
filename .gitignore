@@ -5,7 +5,7 @@ dist/
 .ionic/
 www/
 coverage/
-uploads/
+/uploads/
 *.log
 .env
 .env.local
