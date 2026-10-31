@@ -14,7 +14,7 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
   app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
   app.enableCors({
-    origin: (config.get<string>('CORS_ORIGINS') ?? 'http://localhost:4200').split(','),
+    origin: true,
     credentials: true,
   });
   app.useStaticAssets(join(process.cwd(), config.get<string>('UPLOAD_DIR') ?? 'uploads'), {
@@ -35,7 +35,9 @@ async function bootstrap() {
     .addBearerAuth()
     .build();
   SwaggerModule.setup('api/docs', app, SwaggerModule.createDocument(app, swagger));
-  await app.listen(config.get<number>('PORT') ?? 3000);
+  const port = Number(config.get('PORT') ?? 3010);
+  const host = config.get<string>('HOST') ?? '0.0.0.0';
+  await app.listen(port, host);
 }
 
 void bootstrap();
