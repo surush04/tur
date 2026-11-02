@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Rohi Travel</string>
+    <string name="title_activity_main">Rohi Travel</string>
+    <string name="package_name">tj.rohi.travel</string>
+    <string name="custom_url_scheme">tj.rohi.travel</string>
+</resources>
