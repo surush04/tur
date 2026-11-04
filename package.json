@@ -4,6 +4,7 @@
   "description": "Rohi Travel — mobile app, admin panel, and API for tourism in Tajikistan.",
   "scripts": {
     "start:db": "docker compose up -d",
+    "server": "docker compose up -d --build",
     "install:all": "npm install --prefix backend && npm install --prefix mobile && npm install --prefix admin",
     "dev:api": "npm run start:dev --prefix backend",
     "dev:mobile": "npm run start --prefix mobile",

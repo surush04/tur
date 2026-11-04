@@ -51,15 +51,27 @@ copy .env.example .env
 
 The API key stays on the server. The status endpoint reports whether a key is set, and never returns the key.
 
-## Database with Docker
+## Server with Docker
+
+The website, admin panel, and API run together. The phone app is not in this stack.
 
 ```bash
-docker compose up -d
+docker compose up -d --build
 ```
 
-Use the `DATABASE_URL` from `.env.example`:
+- Website: `http://SERVER/`
+- Admin: `http://SERVER:8080/`
+- API: `http://SERVER:3010/api`
 
-`postgresql://rohi:rohi_dev_password@localhost:5432/rohi_travel?schema=public`
+The site and the admin panel call `/api` on their own address. Nginx inside those containers forwards it to the API. A phone app calls `http://SERVER:3010/api` directly.
+
+Postgres stays on the internal network. Demo accounts are loaded once, after the API is up:
+
+```bash
+docker compose exec api npx prisma db seed
+```
+
+Change `JWT_ACCESS_SECRET` before a shared deployment. The database password in this compose file is the local development password.
 
 ## Database without Docker
 

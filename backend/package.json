@@ -65,5 +65,10 @@
       "^.+\\.ts$": ["ts-jest", { "tsconfig": "tsconfig.json" }]
     },
     "testEnvironment": "node"
+  },
+  "allowScripts": {
+    "@prisma/engines@7.10.1": true,
+    "prisma@7.10.1": true,
+    "esbuild@0.28.2": true
   }
 }

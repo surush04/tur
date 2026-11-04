@@ -1,3 +1,6 @@
+# API and Postgres only. The website, admin panel, and API for the server
+# are together in the docker-compose.yml at the repository root.
+
 name: rohi-api
 
 services:

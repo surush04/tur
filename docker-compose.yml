@@ -1,3 +1,6 @@
+# Server stack: the website, the admin panel, and the API.
+# The phone app is not part of this file. Build it from mobile/android or native/.
+
 name: rohi-travel
 
 services:
@@ -9,15 +12,57 @@ services:
       POSTGRES_USER: rohi
       POSTGRES_PASSWORD: rohi_dev_password
       POSTGRES_DB: rohi_travel
-    ports:
-      - "5432:5432"
     volumes:
       - rohi_pg:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U rohi -d rohi_travel"]
       interval: 5s
       timeout: 5s
-      retries: 10
+      retries: 20
+
+  api:
+    build: ./backend
+    container_name: rohi-api
+    restart: unless-stopped
+    ports:
+      - "3010:3010"
+    environment:
+      DATABASE_URL: postgresql://rohi:rohi_dev_password@postgres:5432/rohi_travel
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-only-access-secret-change-before-any-real-deployment}
+      JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-15m}
+      JWT_REFRESH_TTL_DAYS: ${JWT_REFRESH_TTL_DAYS:-30}
+      PORT: 3010
+      HOST: 0.0.0.0
+      UPLOAD_DIR: uploads
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_BASE_URL: ${AI_BASE_URL:-https://api.openai.com/v1}
+      AI_MODEL: ${AI_MODEL:-gpt-4o-mini}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-RohiAdmin!234}
+      SEED_DEMO_PASSWORD: ${SEED_DEMO_PASSWORD:-Traveler!234}
+    volumes:
+      - uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    build: ./mobile
+    container_name: rohi-web
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+
+  admin:
+    build: ./admin
+    container_name: rohi-admin
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
 
 volumes:
   rohi_pg:
+  uploads:
